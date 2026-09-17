@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Equipment Loan System — Engineering Lab</title>
+<style>
+  :root{
+    --bg:#f3f1ec; --panel:#ffffff; --ink:#1f2a24; --muted:#5c6b63;
+    --line:#d8d3c6; --accent:#2f6f4f; --accent-dark:#204d37;
+    --warn:#a1442b; --warn-bg:#f7e6e1; --ok-bg:#e7f0e9;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#151a17; --panel:#1e2521; --ink:#e9ede9; --muted:#9fb0a5;
+      --line:#333d36; --accent:#5fbf8d; --accent-dark:#8fd8b0;
+      --warn:#e6805f; --warn-bg:#3a231d; --ok-bg:#1e3226;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#151a17; --panel:#1e2521; --ink:#e9ede9; --muted:#9fb0a5;
+    --line:#333d36; --accent:#5fbf8d; --accent-dark:#8fd8b0;
+    --warn:#e6805f; --warn-bg:#3a231d; --ok-bg:#1e3226;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Iowan Old Style','Georgia',serif;
+    font-size:15px; line-height:1.45;
+  }
+  code, .mono, .stack-item, .chip, td:first-child, .badge{
+    font-family:'IBM Plex Mono','Menlo',monospace;
+  }
+  header{
+    display:flex; align-items:baseline; justify-content:space-between;
+    gap:1rem; padding:1rem 1.5rem; border-bottom:2px solid var(--line);
+    background:var(--panel); flex-wrap:wrap;
+  }
+  header h1{ font-size:1.15rem; margin:0; font-weight:600; letter-spacing:.2px;}
+  header .sub{ color:var(--muted); font-size:.85rem;}
+  #clock{ font-family:'IBM Plex Mono','Menlo',monospace; font-size:1rem; }
+  .toolbar{ display:flex; gap:.5rem; align-items:center; flex-wrap:wrap;}
+  nav.tabs{
+    display:flex; gap:0; border-bottom:1px solid var(--line); background:var(--panel);
+    padding:0 1.5rem; overflow-x:auto;
+  }
+  .tab{
+    padding:.7rem 1rem; cursor:pointer; border:none; background:none; color:var(--muted);
+    font:inherit; font-size:.92rem; border-bottom:2px solid transparent; white-space:nowrap;
+  }
+  .tab.active{ color:var(--accent-dark); border-bottom-color:var(--accent); font-weight:600;}
+  main{ padding:1rem 1.5rem 2rem; max-width:1200px; margin:0 auto; }
+  .screen[hidden]{ display:none; }
+  .grid{ display:grid; gap:1rem; }
+  .grid-2{ grid-template-columns:1fr 1fr; }
+  .grid-3{ grid-template-columns:repeat(3,1fr); }
+  @media (max-width: 900px){ .grid-2, .grid-3{ grid-template-columns:1fr; } }
+  .panel{
+    background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:1rem;
+  }
+  .panel h3{ margin:0 0 .6rem; font-size:1rem; }
+  .panel h4{ margin:.4rem 0 .3rem; font-size:.88rem; color:var(--muted); font-weight:600; }
+  table{ width:100%; border-collapse:collapse; font-size:.88rem; }
+  th, td{ text-align:left; padding:.4rem .5rem; border-bottom:1px solid var(--line); }
+  th{ color:var(--muted); font-weight:600; font-size:.78rem; text-transform:none; }
+  .badge{ padding:.1rem .45rem; border-radius:4px; font-size:.76rem; background:var(--ok-bg); color:var(--accent-dark);}
+  .badge-LOANED{ background:var(--warn-bg); color:var(--warn); }
+  .badge-IN_REVIEW, .badge-PENDING_STORAGE{ background:#f4ecd6; color:#8a6d1f; }
+  .badge-MAINTENANCE{ background:var(--warn-bg); color:var(--warn); }
+  .empty{ color:var(--muted); font-style:italic; font-size:.85rem; }
+  label{ display:block; font-size:.8rem; color:var(--muted); margin-bottom:.2rem; }
+  input, select, button{
+    font:inherit; padding:.45rem .55rem; border:1px solid var(--line); border-radius:5px;
+    background:var(--panel); color:var(--ink);
+  }
+  .field{ margin-bottom:.6rem; }
+  .row{ display:flex; gap:.5rem; align-items:flex-end; flex-wrap:wrap; }
+  button{ cursor:pointer; background:var(--accent); color:#fff; border-color:var(--accent-dark); }
+  button:hover{ background:var(--accent-dark); }
+  button.secondary{ background:var(--panel); color:var(--ink); }
+  button.danger{ background:var(--warn); border-color:var(--warn); }
+  .message{ margin:0 1.5rem 1rem; padding:.6rem .9rem; border-radius:5px; font-size:.88rem; }
+  .message:empty{ display:none; }
+  .message.ok{ background:var(--ok-bg); color:var(--accent-dark); }
+  .message.error{ background:var(--warn-bg); color:var(--warn); }
+  .queue-visual, .cart-visual{ display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; margin:.4rem 0; min-height:2.2rem;}
+  .chip, .stack-item{
+    padding:.35rem .55rem; border:1px solid var(--line); border-radius:4px; background:var(--bg);
+    font-size:.8rem; position:relative;
+  }
+  .chip.front, .stack-item.top{ border-color:var(--accent); background:var(--ok-bg); font-weight:600; }
+  .chip small, .stack-item small{
+    display:block; font-size:.6rem; color:var(--accent-dark); font-weight:700; letter-spacing:.03em;
+  }
+  .arrow{ color:var(--muted); }
+  .queue-type{ margin-bottom:1rem; padding-bottom:.8rem; border-bottom:1px dashed var(--line); }
+  .queue-type:last-child{ border-bottom:none; }
+  .counter{ font-size:.78rem; color:var(--muted); margin:.2rem 0 0; }
+  .cart{ margin-bottom:1.2rem; }
+  .cart-visual{ flex-direction:column-reverse; align-items:flex-start; }
+  #log{ list-style:none; margin:0; padding:0; max-height:320px; overflow-y:auto; font-size:.82rem; }
+  #log li{ padding:.3rem 0; border-bottom:1px solid var(--line); }
+  #log .log-error{ color:var(--warn); }
+  .metric-group{ margin-bottom:.9rem; }
+  .metric-group p{ margin:.15rem 0; font-size:.85rem; }
+  footer{ text-align:center; color:var(--muted); font-size:.78rem; padding:1rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Equipment Loan System — Engineering Lab</h1>
+    <div class="sub">List + Queue + Stack &middot; TypeScript</div>
+  </div>
+  <div class="toolbar">
+    <span id="clock" class="mono"></span>
+    <button class="secondary" id="btnAdvanceTime" title="Advances the shift clock by 30 minutes">+30 min</button>
+    <button id="btnLoadData">Load sample data</button>
+  </div>
+</header>
+
+<div class="message" id="message"></div>
+
+<nav class="tabs">
+  <button class="tab active" data-tab="inventory">1. Inventory</button>
+  <button class="tab" data-tab="desk">2. Loan Desk</button>
+  <button class="tab" data-tab="carts">3. Carts</button>
+  <button class="tab" data-tab="review">4. Review &amp; Reports</button>
+</nav>
+
+<main>
+
+  <!-- SCREEN 1: INVENTORY -->
+  <section class="screen" data-screen="inventory">
+    <div class="grid grid-2">
+      <div class="panel">
+        <h3>Inventory (linked list)</h3>
+        <div class="row" style="margin-bottom:.6rem;">
+          <div class="field">
+            <label>Filter by type</label>
+            <select id="filterType">
+              <option value="ALL">All</option>
+              <option value="LAPTOP">LAPTOP</option>
+              <option value="KIT">KIT</option>
+              <option value="MULTIMETER">MULTIMETER</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Filter by status</label>
+            <select id="filterStatus">
+              <option value="ALL">All</option>
+              <option value="IN_CART">IN_CART</option>
+              <option value="LOANED">LOANED</option>
+              <option value="IN_REVIEW">IN_REVIEW</option>
+              <option value="MAINTENANCE">MAINTENANCE</option>
+              <option value="PENDING_STORAGE">PENDING_STORAGE</option>
+            </select>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Code</th><th>Type</th><th>Status</th><th>Loans</th></tr></thead>
+          <tbody id="inventoryTable"></tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <h3>Find equipment</h3>
+        <div class="field">
+          <label>Code</label>
+          <input id="searchCode" placeholder="e.g. LAP-01">
+        </div>
+        <p id="searchResult" class="empty"></p>
+
+        <h3 style="margin-top:1.4rem;">Add new equipment</h3>
+        <div class="row">
+          <div class="field">
+            <label>Code</label>
+            <input id="addCode" placeholder="e.g. LAP-06">
+          </div>
+          <div class="field">
+            <label>Type</label>
+            <select id="addType">
+              <option value="LAPTOP">LAPTOP</option>
+              <option value="KIT">KIT</option>
+              <option value="MULTIMETER">MULTIMETER</option>
+            </select>
+          </div>
+          <button id="btnAdd">Add</button>
+        </div>
+        <p class="empty">The item is pushed onto its type's cart right away if there is room (R7).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 2: LOAN DESK -->
+  <section class="screen" data-screen="desk" hidden>
+    <div class="grid grid-2">
+      <div class="panel">
+        <h3>Request equipment</h3>
+        <div class="row">
+          <div class="field">
+            <label>Student</label>
+            <input id="reqStudent" placeholder="student ID">
+          </div>
+          <div class="field">
+            <label>Type</label>
+            <select id="reqType" class="select-type"></select>
+          </div>
+          <button id="btnRequest">Request</button>
+        </div>
+
+        <h3 style="margin-top:1.2rem;">Return equipment</h3>
+        <div class="row">
+          <div class="field">
+            <label>Equipment code</label>
+            <input id="retCode" placeholder="e.g. LAP-01">
+          </div>
+          <button id="btnReturn">Return</button>
+        </div>
+
+        <h3 style="margin-top:1.2rem;">Directed loan (instructor)</h3>
+        <div class="row">
+          <div class="field">
+            <label>Equipment code</label>
+            <input id="dirCode" placeholder="e.g. KIT-02">
+          </div>
+          <div class="field">
+            <label>Student / instructor</label>
+            <input id="dirStudent" placeholder="name">
+          </div>
+          <button id="btnDirected">Hand over</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Wait queues (front marked)</h3>
+        <div id="waitQueues"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCREEN 3: CARTS -->
+  <section class="screen" data-screen="carts" hidden>
+    <div class="panel">
+      <h3>Carts (stacks, top on top)</h3>
+      <p class="empty">A directed loan pops items into an internal auxiliary cart and restores the order; the result message reports how many moves it cost.</p>
+      <div class="grid grid-3" id="carts"></div>
+    </div>
+  </section>
+
+  <!-- SCREEN 4: REVIEW -->
+  <section class="screen" data-screen="review" hidden>
+    <div class="grid grid-2">
+      <div class="panel">
+        <h3>Review queue</h3>
+        <div class="queue-visual" id="reviewQueue"></div>
+        <div class="row" style="margin-top:.6rem;">
+          <button id="btnReviewOk">Approve front of queue</button>
+          <button class="danger" id="btnReviewDamaged">Report damage</button>
+        </div>
+
+        <h3 style="margin-top:1.4rem;">Pending storage queue (R7)</h3>
+        <div class="queue-visual" id="storageQueue"></div>
+        <button class="secondary" id="btnStorePending" style="margin-top:.4rem;">Store next pending item</button>
+      </div>
+
+      <div class="panel">
+        <h3>Metrics panel</h3>
+        <div id="metrics"></div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:1rem;">
+      <h3>Log</h3>
+      <ul id="log"></ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>Case study 2 &middot; List + Queue + Stack &middot; UI kept separate from the logic (RFE-01)</footer>
+
+<script src="dist/bundle.js"></script>
+</body>
+</html>
